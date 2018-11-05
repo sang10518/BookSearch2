@@ -10,8 +10,8 @@ import retrofit2.http.Path;
 
 public interface GetDataService {
 
-    @GET("search/{keyword}")
-    Call<RawResponse> getAllResponse(@Path("keyword") String keyword);
+    @GET("search/{keyword}/{page}")
+    Call<RawResponse> getAllResponse(@Path("keyword") String keyword, @Path("page") int page);
 
     @GET("books/{keyword}")
     Call<DetailedBook> getBookDetail(@Path("keyword") String keyword);

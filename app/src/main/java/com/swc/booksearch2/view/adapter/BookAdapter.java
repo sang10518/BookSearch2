@@ -27,6 +27,10 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.CustomViewHold
         this.dataList = dataList;
     }
 
+    public void addBooks(Book b){
+        if (dataList != null) dataList.add(b);
+    }
+
     class CustomViewHolder extends RecyclerView.ViewHolder {
 
         public final View mView;

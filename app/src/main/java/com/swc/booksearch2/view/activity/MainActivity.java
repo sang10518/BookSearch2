@@ -24,12 +24,16 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static android.support.v7.widget.RecyclerView.SCROLL_STATE_IDLE;
+
 public class MainActivity extends AppCompatActivity {
 
     private BookAdapter mBookAdapter;
     private RecyclerView mRecyclerView;
     ProgressDialog progressDialog;
     SearchView mSearchView;
+    private String mQuery;
+    private int mCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +44,10 @@ public class MainActivity extends AppCompatActivity {
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                mCount = 0;
                 getBooks(query);
                 mSearchView.clearFocus();
+                mQuery = query;
                 return true;
             }
 
@@ -60,16 +66,21 @@ public class MainActivity extends AppCompatActivity {
         progressDialog.setMessage("Loading....");
         progressDialog.show();
 
+        mCount++;
+
         /*Create handle for the RetrofitInstance interface*/
         GetDataService service = RetrofitInstance.getInstance().create(GetDataService.class);
-
         String keyword = query;
-        Call<RawResponse> call = service.getAllResponse(keyword);
+        Call<RawResponse> call = service.getAllResponse(keyword, mCount);
         call.enqueue(new Callback<RawResponse>() {
             @Override
             public void onResponse(Call<RawResponse> call, Response<RawResponse> response) {
                 progressDialog.dismiss();
-                generateDataList(response.body().getBooks());
+                if (mCount == 1){
+                    generateDataList(response.body().getBooks());
+                } else {
+                    appendDataList(response.body().getBooks());
+                }
                 for (Book b:  response.body().getBooks()){
                     Log.e("asdf", b.getTitle());
                 }
@@ -102,8 +113,44 @@ public class MainActivity extends AppCompatActivity {
             RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
             mRecyclerView.setLayoutManager(layoutManager);
             mRecyclerView.setAdapter(mBookAdapter);
+            mRecyclerView.setOnScrollListener(onScrollListener());
         }
+    }
+
+    private void appendDataList(List<Book> bookList) {
+        mRecyclerView = findViewById(R.id.rvBooks);
+        LinearLayout llNoBooks = findViewById(R.id.llNoBooks);
+
+        if (bookList.size() ==0){
+            mRecyclerView.setVisibility(View.GONE);
+            llNoBooks.setVisibility(View.VISIBLE);
+        } else {
+            mRecyclerView.setVisibility(View.VISIBLE);
+            llNoBooks.setVisibility(View.GONE);
+
+            for (Book b: bookList){
+                mBookAdapter.addBooks(b);
+            }
+            mBookAdapter.notifyDataSetChanged();
+        }
+    }
 
 
+    private RecyclerView.OnScrollListener onScrollListener() {
+        return new RecyclerView.OnScrollListener() {
+
+
+            @Override
+            public void onScrollStateChanged(RecyclerView view, int scrollState) {
+
+                if (scrollState == SCROLL_STATE_IDLE) {
+                    if (!mRecyclerView.canScrollVertically(1)) {
+                        mCount++;
+                        getBooks(mQuery);
+                    }
+                }
+            }
+
+        };
     }
 }
